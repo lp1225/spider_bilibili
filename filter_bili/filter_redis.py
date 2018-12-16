@@ -13,7 +13,7 @@ class FilterRedis:
 
         return r
 
-    def save_flowers_mongodb(self, result):
+    def save_flowers_redis(self, result):
         """
         将关注的用户信息和粉丝信息保存
         """

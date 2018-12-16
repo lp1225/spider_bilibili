@@ -2,8 +2,8 @@ import requests
 import time
 from requests.exceptions import ConnectionError
 
-from . filter_redis import FilterRedis
-from . mongo_db import Mongodb
+from filter_bili.filter_redis import FilterRedis
+from filter_bili.mongo_db import Mongodb
 
 MID = 0
 MIN = 0
@@ -67,7 +67,7 @@ def get_userinfo(user_id, mongo):
                 }
                 print('用户个人信息:{}'.format(result))
                 # 得到用户个人信息保存到数据库
-                mongo.save_getinfo_mongodb(result=result)
+                mongo.save_getinfo_mongodb(result)
 
             else:
                 print('获取用户个人信息失败,code {}'.format(response.status_code))
@@ -96,7 +96,7 @@ def get_myinfo(user_id):
             if status.get('data'):
                 data = status.get('data')
                 # 粉丝
-                follower = status.get('fllower')
+                follower = data.get('follower')
                 # 关注
                 following = data.get('following')
                 print('关注数量:{}, 粉丝数量:{}'.format(following, follower))
@@ -107,7 +107,7 @@ def get_myinfo(user_id):
         print('ConnectionError网络异常', e.args)
 
 
-def get_following(user_id, page, filter):
+def get_following(user_id, page, filter, mongo):
     """
     获取关注用户信息
     """
@@ -135,9 +135,9 @@ def get_following(user_id, page, filter):
                     }
                     print(result)
                     # 得到mid进入用户主页面
-                    get_space(result.get('user_id'))
+                    get_space(result.get('user_id'), mongo)
                     # 保存关注用户的信息
-                    # save_flowers_mongodb(result)
+                    filter.save_flowers_redis(result)
         else:
             print('获取关注用户信息失败:{}'.format(response.status_code))
 
@@ -145,7 +145,7 @@ def get_following(user_id, page, filter):
         print('ConnectionError网络异常', e.args)
 
 
-def get_followers(user_id, page, filter):
+def get_followers(user_id, page, filter, mongo):
     """
     获取粉丝信息
     """
@@ -174,16 +174,16 @@ def get_followers(user_id, page, filter):
                     }
                     print(result)
                     # 得到mid进入用户主页面
-                    get_space(result.get('user_id'))
+                    get_space(result.get('user_id'), mongo)
                     # 保存粉丝用户user_id到数据库
-                    # save_flowers_mongodb(result)
+                    filter.save_flowers_redis(result)
         else:
             print('获取所有粉丝用户信息失败{}'.format(response.status_code))
     except ConnectionError as e:
         print('ConnectionError网络异常', e.args)
 
 
-def run(user_id, filter, mongo):
+def run(user_id, mongo, filter):
     # 进入用户主页
     get_space(user_id, mongo)
     time.sleep(0.5)
@@ -194,23 +194,23 @@ def run(user_id, filter, mongo):
     # 获取关注用户信息
     page = int(flower/20)+1
     if page <= 1:
-        get_following(user_id, 1, filter)
+        get_following(user_id, 1, filter, mongo)
     else:
         # b站限制最多查看5页
         if page > 5:
             page = 5
         for g_item in range(1, page):
-            get_following(user_id, g_item, filter)
+            get_following(user_id, g_item, filter, mongo)
 
     # 获取粉丝信息
     f_page = int(flower/20)+1
     if f_page <= 1:
-        get_followers(user_id, 1, filter)
+        get_followers(user_id, 1, filter, mongo)
     else:
         if f_page > 5:
             f_page = 5
         for g_item in range(1, f_page):
-            get_followers(user_id, g_item, filter)
+            get_followers(user_id, g_item, filter, mongo)
 
     # 循环
     rep_run(mongo)
@@ -247,7 +247,6 @@ def rep_run(mongo):
 
 if __name__ == '__main__':
     mongo = Mongodb()
-    redis = FilterRedis()
-    filter = redis.create_filter()
+    filter = FilterRedis()
     id = '22520707'
     run(id, mongo, filter)

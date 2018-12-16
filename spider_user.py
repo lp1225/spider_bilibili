@@ -82,7 +82,7 @@ def get_getinfo(user_id):
 
 def get_myinfo(user_id):
     """
-    获取用户关注数量的粉丝数量
+    获取用户关注数量和粉丝数量
     """
     try:
         headers = {
@@ -176,7 +176,6 @@ def get_followers(user_id, page):
                         'user_name': item.get('uname'),
                         'user_id': item.get('mid')
                     }
-                    print(result)
                     # 得到mid进入用户主页面
                     get_space(result.get('user_id'))
                     # 保存粉丝用户user_id到数据库
@@ -195,15 +194,17 @@ def save_flowers_mongodb(result):
     MID += 1
     collection = db.list
     result['id'] = MID
-    if collection.find_one({'user_id': result.get('user_id')}):
-        print('{} 在数据库已经存在'.format(result.get('user_name')))
+    user = collection.find_one({'mid': result.get('user_id')})
+    if user:
+        print('{} 在数据库已经存在'.format(user['name']))
     else:
         if collection.find_one({'id': MID}):
-            print('数据库已存在该id{}'.format(MID))
+            print('id为{} 的用户已经存在数据库中'.format(MID))
             save_flowers_mongodb(result)
         else:
             collection.insert(result)
-            print('{} 保存到数据库'.format(result.get('user_name')), end='\n')
+            print('保存用户{} 的关注信息和粉丝信息到数据库'.format(result.get('user_name')))
+            print('============================================')
 
 
 def save_getinfo_mongodb(result):
@@ -211,11 +212,12 @@ def save_getinfo_mongodb(result):
     将用户个人信息保存到mongodb
     """
     collection = db.myinfo
-    if collection.find_one({'user_id': result.get('user_id')}):
-        print('{} 用户在数据库已存在'.format(result.get('user_name')))
+    user = collection.find_one({'mid': result.get('mid')})
+    if user:
+        print('{} 在数据库已存在'.format(user['name']))
     else:
         collection.insert(result)
-        print('{} 用户保存到数据库成功'.format(result.get('user_name')))
+        print('{} 保存到数据库成功'.format(result.get('name')))
 
 
 def run(user_id):
@@ -279,5 +281,6 @@ def rep_run():
 
 
 if __name__ == '__main__':
-    id = 'your id'
+    # id = 'your id'
+    id = '22520707'
     run(id)
